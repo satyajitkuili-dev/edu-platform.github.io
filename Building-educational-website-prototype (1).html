@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<!-- Playables SDK -->
+<script>// Playables SDK v1.0.0
+// Game lifecycle bridge: rAF-based game-ready detection + event communication
+(function() {
+  'use strict';
+
+  // Idempotency: skip if already initialized (e.g., server-side injection
+  // followed by client-side inject-javascript via the Bloks webview component).
+  if (window.playablesSDK) return;
+
+  var HANDLER_NAME = 'playablesGameEventHandler';
+  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
+  var RAF_FRAME_THRESHOLD = 3;
+
+  var gameReadySent = false;
+  var firstInteractionSent = false;
+  var errorSent = false;
+  var frameCount = 0;
+  var originalRAF = window.requestAnimationFrame;
+
+  // --- Transport Layer ---
+
+  function hasIOSBridge() {
+    return !!(window.webkit &&
+              window.webkit.messageHandlers &&
+              window.webkit.messageHandlers[HANDLER_NAME]);
+  }
+
+  function hasAndroidBridge() {
+    return !!(window[ANDROID_BRIDGE_NAME] &&
+              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
+  }
+
+  function isInIframe() {
+    return !!(window.parent && window.parent !== window);
+  }
+
+  function sendEvent(eventName, payload) {
+    var message = {
+      type: eventName,
+      payload: payload || {},
+      timestamp: Date.now()
+    };
+
+    if (hasIOSBridge()) {
+      try {
+        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
+      } catch (e) { /* ignore */ }
+      return;
+    }
+
+    if (hasAndroidBridge()) {
+    try {
+      var p = payload || {};
+      p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
+      window[ANDROID_BRIDGE_NAME].postEvent(
+        eventName,
+        JSON.stringify(p)
+      );
+    } catch (e) { /* ignore */ }
+    return;
+  }
+
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage(message, '*');
+      } catch (e) { /* ignore */ }
+      return;
+    }
+  }
+
+  // --- rAF Game-Ready Detection ---
+
+  function onFrame() {
+    if (gameReadySent) return;
+
+    frameCount++;
+    if (frameCount >= RAF_FRAME_THRESHOLD) {
+      gameReadySent = true;
+      sendEvent('game_ready', {
+        frame_count: frameCount,
+        detected_at: Date.now()
+      });
+      return;
+    }
+
+    originalRAF.call(window, onFrame);
+  }
+
+  if (originalRAF) {
+    window.requestAnimationFrame = function(callback) {
+      if (!gameReadySent) {
+        return originalRAF.call(window, function(timestamp) {
+          frameCount++;
+          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {
+            gameReadySent = true;
+            sendEvent('game_ready', {
+              frame_count: frameCount,
+              detected_at: Date.now()
+            });
+          }
+          callback(timestamp);
+        });
+      }
+      return originalRAF.call(window, callback);
+    };
+  }
+
+  // --- First User Interaction Detection ---
+
+  function setupFirstInteractionDetection() {
+    var events = ['touchstart', 'mousedown', 'keydown'];
+
+    function onFirstInteraction() {
+      if (firstInteractionSent) return;
+      firstInteractionSent = true;
+      sendEvent('user_interaction_start', null);
+
+      for (var i = 0; i < events.length; i++) {
+        document.removeEventListener(events[i], onFirstInteraction, true);
+      }
+    }
+
+    for (var i = 0; i < events.length; i++) {
+      document.addEventListener(events[i], onFirstInteraction, true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
+  } else {
+    setupFirstInteractionDetection();
+  }
+
+  // --- Auto Error Capture ---
+
+  window.addEventListener('error', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    sendEvent('error', {
+      message: event.message || 'Unknown error',
+      source: event.filename || '',
+      lineno: event.lineno || 0,
+      colno: event.colno || 0,
+      auto_captured: true
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    var reason = event.reason;
+    sendEvent('error', {
+      message: (reason instanceof Error) ? reason.message : String(reason),
+      type: 'unhandled_promise_rejection',
+      auto_captured: true
+    });
+  });
+
+  // --- Public API ---
+
+  window.playablesSDK = {
+    complete: function(score) {
+      sendEvent('game_ended', {
+        score: score,
+        completed: true
+      });
+    },
+
+    error: function(message) {
+      if (errorSent) return;
+      errorSent = true;
+      sendEvent('error', {
+        message: message || 'Unknown error',
+        auto_captured: false
+      });
+    },
+
+    sendEvent: function(eventName, payload) {
+      if (!eventName || typeof eventName !== 'string') return;
+      sendEvent(eventName, payload);
+    }
+  };
+
+  // Kick off rAF detection in case no game code calls rAF immediately
+  if (originalRAF) {
+    originalRAF.call(window, onFrame);
+  }
+})();</script>
+<script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PadhoIndia — JEE NEET UPSC SSC | India's Affordable Learning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
+  <script>
+    tailwind = { config: { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter','system-ui'] }, colors: { primary: '#7C3AED', saffron: '#FF6B00' }, animation: { float: 'float 6s ease-in-out infinite', 'pulse-slow': 'pulse 3s linear infinite' } , keyframes: { float: { '0%,100%':{transform:'translateY(0)'}, '50%':{transform:'translateY(-12px)'} } } } } } }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    *{ -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale }
+    body{ font-family:'Inter',sans-serif }
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-thumb{background:#7C3AED55;border-radius:8px}
+    .glass{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    .shimmer{position:relative;overflow:hidden}
+    .shimmer::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:shimmer 2.2s infinite}
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+    .course-card:hover .thumb{transform:scale(1.05)}
+  </style>
+</head>
+<body class="bg-white dark:bg-[#070b14] text-gray-900 dark:text-zinc-100 transition-colors duration-300">
+  <!-- NAV -->
+  <header id="nav" class="fixed top-0 w-full z-40 border-b border-zinc-200/70 dark:border-white/10 bg-white/70 dark:bg-[#070b14]/70 glass">
+    <div class="max-w-[1200px] mx-auto px-4">
+      <div class="h-[68px] flex items-center justify-between gap-4">
+        <div class="flex items-center gap-7">
+          <a href="#" class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-saffron to-primary shadow-lg shadow-violet-600/20 grid place-items-center">
+              <span class="text-white font-black text-[18px] leading-none">प</span>
+            </div>
+            <div class="leading-tight">
+              <div class="text-[20px] font-extrabold tracking-tight">Padho<span class="text-primary">India</span></div>
+              <div class="text-[10px] -mt-1 text-zinc-500 dark:text-zinc-400 font-medium">Bharat Ka Learning App</div>
+            </div>
+          </a>
+          <nav class="hidden lg:flex items-center gap-6 text-[14px] font-medium text-zinc-600 dark:text-zinc-300">
+            <a href="#courses" class="hover:text-zinc-900 dark:hover:text-white">Explore</a>
+            <a href="#live" class="hover:text-zinc-900 dark:hover:text-white flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>Live</a>
+            <a href="#tests" class="hover:text-zinc-900 dark:hover:text-white">Test Series</a>
+            <a href="#pricing" class="hover:text-zinc-900 dark:hover:text-white">Batches</a>
+          </nav>
+        </div>
+
+        <div class="hidden md:flex items-center flex-1 max-w-[420px]">
+          <div class="relative w-full">
+            <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"></i>
+            <input id="globalSearch" placeholder="Search JEE, NEET, UPSC, SSC..." class="w-full h-10 pl-9 pr-3 rounded-xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="darkToggle" class="w-9 h-9 grid place-items-center rounded-xl hover:bg-zinc-100 dark:hover:bg-white/10 transition" aria-label="Toggle theme">
+            <i class="ri-sun-line dark:hidden"></i>
+            <i class="ri-moon-clear-line hidden dark:block"></i>
+          </button>
+          <button class="hidden sm:inline-flex h-9 px-3.5 items-center rounded-xl text-sm font-semibold hover:bg-zinc-100 dark:hover:bg-white/10 transition">Login</button>
+          <button class="h-9 px-4 inline-flex items-center rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-saffron to-primary shadow-md shadow-violet-600/20 hover:shadow-lg hover:shadow-violet-600/30 transition">Join Free</button>
+          <button id="menuBtn" class="lg:hidden w-9 h-9 grid place-items-center rounded-xl hover:bg-zinc-100 dark:hover:bg-white/10"><i class="ri-menu-line text-xl"></i></button>
+        </div>
+      </div>
+    </div>
+    <!-- mobile -->
+    <div id="mobileNav" class="lg:hidden hidden border-t border-zinc-200 dark:border-white/10">
+      <div class="px-4 py-3 space-y-2 text-sm">
+        <a href="#courses" class="block py-2">Explore</a>
+        <a href="#live" class="block py-2">Live Classes</a>
+        <a href="#tests" class="block py-2">Test Series</a>
+        <a href="#pricing" class="block py-2">Batches</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="relative pt-28 pb-16 overflow-hidden">
+    <div class="absolute inset-0 -z-10">
+      <div class="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-saffron/20 to-primary/20 blur-[120px]"></div>
+      <div class="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-primary/20 to-blue-500/20 blur-[100px]"></div>
+    </div>
+    <div class="max-w-[1200px] mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 text-xs font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          2.3 Crore+ students • PW + Unacademy level teachers
+        </div>
+        <h1 class="mt-5 text-[42px] sm:text-[56px] leading-[1.05] font-black tracking-tight">
+          Padhega India,<br>
+          <span class="bg-gradient-to-r from-saffron via-primary to-violet-600 bg-clip-text text-transparent">Tabhi Toh Badhega India</span>
+        </h1>
+        <p class="mt-5 text-[17px] leading-relaxed text-zinc-600 dark:text-zinc-300 max-w-xl">Live classes in Hinglish, DPPs, Test Series & Recorded lectures for <b class="text-zinc-900 dark:text-white">JEE, NEET, UPSC, SSC, Banking & CBSE 6-12</b>. India’s most affordable — starting ₹999.</p>
+        <div class="mt-7 flex flex-wrap gap-3">
+          <button onclick="document.getElementById('courses').scrollIntoView({behavior:'smooth'})" class="h-12 px-6 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-black font-semibold hover:opacity-90 transition flex items-center gap-2">
+            <i class="ri-play-circle-line text-lg"></i> Start Free Trial
+          </button>
+          <button onclick="openVideo('https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1')" class="h-12 px-6 rounded-xl border border-zinc-300 dark:border-white/20 font-semibold hover:bg-zinc-50 dark:hover:bg-white/5 transition flex items-center gap-2">
+            <i class="ri-live-line text-red-500"></i> Watch Demo
+          </button>
+          <button id="quizOpen" class="h-12 px-5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold hover:bg-amber-500/20 transition flex items-center gap-2">
+            <i class="ri-quiz-line"></i> Daily Quiz
+          </button>
+        </div>
+        <div class="mt-10 grid grid-cols-3 gap-6 max-w-md">
+          <div>
+            <div class="text-2xl font-extrabold">50K+</div>
+            <div class="text-xs text-zinc-500">Live Classes</div>
+          </div>
+          <div>
+            <div class="text-2xl font-extrabold">10K+</div>
+            <div class="text-xs text-zinc-500">Top Educators</div>
+          </div>
+          <div>
+            <div class="text-2xl font-extrabold">4.8★</div>
+            <div class="text-xs text-zinc-500">App Rating</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Mock -->
+      <div class="relative">
+        <div class="relative mx-auto w-full max-w-[520px]">
+          <div class="absolute -inset-6 bg-gradient-to-br from-saffron/30 to-primary/30 blur-3xl rounded-[3rem]"></div>
+          <div class="relative rounded-[2.2rem] bg-zinc-900 p-2 shadow-2xl shadow-black/30">
+            <div class="rounded-[1.8rem] bg-white dark:bg-zinc-950 overflow-hidden">
+              <div class="h-11 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-white/10">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                </div>
+                <div class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white flex items-center gap-1"><span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>LIVE</div>
+              </div>
+              <div class="aspect-[16/10] relative bg-zinc-950">
+                <img src="https://images.unsplash.com/photo-1584697964358-3e14ca57658b?q=80&w=1200&auto=format" class="w-full h-full object-cover opacity-90" alt="">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                <div class="absolute bottom-3 left-3 right-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-saffron to-primary grid place-items-center text-white font-bold text-xs">NV</div>
+                    <div>
+                      <div class="text-white text-sm font-semibold leading-tight">Organic Chemistry — JEE Advanced</div>
+                      <div class="text-[11px] text-white/70">NV Sir • 42.3K watching</div>
+                    </div>
+                  </div>
+                <button onclick="openVideo('https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1')" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/90 grid place-items-center shadow-xl hover:scale-105 transition">
+                  <i class="ri-play-fill text-3xl text-zinc-900 ml-0.5"></i>
+                </button>
+              </div>
+              <div class="p-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex -space-x-2">
+                    <img class="w-7 h-7 rounded-full border-2 border-white dark:border-zinc-900" src="https://i.pravatar.cc/32?img=1"/>
+                    <img class="w-7 h-7 rounded-full border-2 border-white dark:border-zinc-900" src="https://i.pravatar.cc/32?img=2"/>
+                    <img class="w-7 h-7 rounded-full border-2 border-white dark:border-zinc-900" src="https://i.pravatar.cc/32?img=3"/>
+                    <div class="w-7 h-7 rounded-full border-2 border-white dark:border-zinc-900 bg-zinc-900 text-white grid place-items-center text-[10px]">+2K</div>
+                  </div>
+                  <div class="text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Doubts Solved: 1,248</div>
+                </div>
+              </div>
+            </div>
+          <!-- floating cards -->
+          <div class="absolute -left-6 top-16 hidden sm:flex items-center gap-2 px-3 py-2 rounded-2xl bg-white dark:bg-zinc-900 shadow-xl border border-zinc-200 dark:border-white/10 animate-float">
+            <div class="w-8 h-8 rounded-lg bg-violet-600 grid place-items-center text-white"><i class="ri-vip-diamond-line"></i></div>
+            <div><div class="text-[11px] text-zinc-500">AIR 1 Produced</div><div class="text-sm font-bold -mt-0.5">NEET 2024</div></div>
+          </div>
+          <div class="absolute -right-4 bottom-10 hidden sm:flex items-center gap-2 px-3 py-2 rounded-2xl bg-white dark:bg-zinc-900 shadow-xl border border-zinc-200 dark:border-white/10 animate-float" style="animation-delay:1s">
+            <div class="w-8 h-8 rounded-lg bg-emerald-600 grid place-items-center text-white"><i class="ri-check-line"></i></div>
+            <div><div class="text-[11px] text-zinc-500">Doubt Solve</div><div class="text-sm font-bold -mt-0.5"> < 60 sec</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATEGORIES -->
+  <section class="border-y border-zinc-200 dark:border-white/5 bg-zinc-50 dark:bg-[#0a0f1c]">
+    <div class="max-w-[1200px] mx-auto px-4 py-8">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-bold">Choose Your Goal</h2>
+        <div class="text-xs text-zinc-500">Crafted for Bharat</div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- cat -->
+        <a href="#courses" data-cat="jee" class="cat group relative overflow-hidden rounded-2xl bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 p-4 hover:-translate-y-0.5 hover:shadow-lg transition">
+          <div class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 grid place-items-center mb-3 group-hover:scale-110 transition"><i class="ri-atom-line text-xl"></i></div>
+          <div class="font-semibold">JEE</div>
+          <div class="text-xs text-zinc-500">11.2L+ learners</div>
+        </a>
+        <a href="#courses" data-cat="neet" class="cat group relative overflow-hidden rounded-2xl bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 p-4 hover:-translate-y-0.5 hover:shadow-lg transition">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 grid place-items-center mb-3 group-hover:scale-110 transition"><i class="ri-heart-pulse-line text-xl"></i></div>
+          <div class="font-semibold">NEET</div>
+          <div class="text-xs text-zinc-500">18.4L+ learners</div>
+        </a>
+        <a href="#courses" data-cat="upsc" class="cat group relative overflow-hidden rounded-2xl bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 p-4 hover:-translate-y-0.5 hover:shadow-lg transition">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 grid place-items-center mb-3 group-hover:scale-110 transition"><i class="ri-government-line text-xl"></i></div>
+          <div class="font-semibold">UPSC CSE</div>
+          <div class="text-xs text-zinc-500">5.1L+ learners</div>
+        </a>
+        <a href="#courses" data-cat="ssc" class="cat group relative overflow-hidden rounded-2xl bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 p-4 hover:-translate-y-0.5 hover:shadow-lg transition">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 grid place-items-center mb-3 group-hover:scale-110 transition"><i class="ri-bank-card-line text-xl"></i></div>
+          <div class="font-semibold">SSC</div>
+          <div class="text-xs text-zinc-500">21L+ learners</div>
+        </a>
+        <a href="#courses" data-cat="cbse" class="cat group relative overflow-hidden rounded-2xl bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 p-4 hover:-translate-y-0.5 hover:shadow-lg transition">
+          <div class="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-600 grid place-items-center mb-3 group-hover:scale-110 transition"><i class="ri-book-open-line text-xl"></i></div>
+          <div class="font-semibold">CBSE 9-12</div>
+          <div class="text-xs text-zinc-500">35L+ learners</div>
+        </a>
+        <a href="#courses" data-cat="banking" class="cat group relative overflow-hidden rounded-2xl bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 p-4 hover:-translate-y-0.5 hover:shadow-lg transition">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 grid place-items-center mb-3 group-hover:scale-110 transition"><i class="ri-funds-line text-xl"></i></div>
+          <div class="font-semibold">Banking</div>
+          <div class="text-xs text-zinc-500">8.3L+ learners</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE -->
+  <section id="live" class="max-w-[1200px] mx-auto px-4 py-16">
+    <div class="flex items-end justify-between gap-4 mb-6">
+      <div>
+        <h2 class="text-[28px] font-extrabold tracking-tight">Live Classes <span class="align-middle inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-red-500 text-white ml-2"><span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>ABHI PADHO</span></h2>
+        <p class="text-sm text-zinc-500 mt-1">Join free • Ask doubts live • In Hinglish</p>
+      </div>
+      <a href="#" class="text-sm font-semibold text-primary hover:underline">View schedule →</a>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-5">
+      <!-- live card -->
+      <div class="group relative rounded-[24px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] overflow-hidden hover:shadow-xl transition">
+        <div class="aspect-video relative overflow-hidden">
+          <img src="https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1200&auto=format" class="w-full h-full object-cover thumb transition duration-500" alt="">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          <div class="absolute top-3 left-3 flex items-center gap-2">
+            <span class="px-2 py-1 text-[11px] font-bold rounded-md bg-red-600 text-white flex items-center gap-1"><span class="w-1 h-1 bg-white rounded-full animate-pulse"></span>LIVE</span>
+            <span class="px-2 py-1 text-[11px] font-semibold rounded-md bg-black/60 text-white backdrop-blur">JEE</span>
+          </div>
+          <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+            <div class="text-white text-sm font-semibold">Electrochemistry Part 2</div>
+            <div class="live-timer text-[11px] font-mono px-2 py-1 rounded bg-white/90 text-zinc-900" data-start=""></div>
+          </div>
+        </div>
+        <div class="p-4">
+          <div class="flex items-center gap-3">
+            <img src="https://i.pravatar.cc/40?img=11" class="w-9 h-9 rounded-full" alt="">
+            <div>
+              <div class="text-sm font-semibold leading-tight">Abhilash Sir</div>
+              <div class="text-xs text-zinc-500">Starts in • 6:30 PM</div>
+            </div>
+            <button onclick="openVideo('https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1')" class="ml-auto h-8 px-3 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-xs font-semibold hover:opacity-90">Join</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="group relative rounded-[24px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] overflow-hidden hover:shadow-xl transition">
+        <div class="aspect-video relative overflow-hidden">
+          <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=1200&auto=format" class="w-full h-full object-cover thumb transition duration-500" alt="">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          <div class="absolute top-3 left-3 flex items-center gap-2">
+            <span class="px-2 py-1 text-[11px] font-bold rounded-md bg-zinc-900 text-white">UPCOMING</span>
+            <span class="px-2 py-1 text-[11px] font-semibold rounded-md bg-black/60 text-white backdrop-blur">NEET</span>
+          </div>
+          <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+            <div class="text-white text-sm font-semibold">Human Physiology PYQs</div>
+            <div class="live-timer text-[11px] font-mono px-2 py-1 rounded bg-white/90 text-zinc-900" data-start=""></div>
+          </div>
+        </div>
+        <div class="p-4">
+          <div class="flex items-center gap-3">
+            <img src="https://i.pravatar.cc/40?img=5" class="w-9 h-9 rounded-full" alt="">
+            <div>
+              <div class="text-sm font-semibold leading-tight">Dr. Sushma</div>
+              <div class="text-xs text-zinc-500">Starts in • 8:00 PM</div>
+            </div>
+            <button class="ml-auto h-8 px-3 rounded-lg border border-zinc-300 dark:border-white/20 text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-white/5">Remind</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="group relative rounded-[24px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] overflow-hidden hover:shadow-xl transition">
+        <div class="aspect-video relative overflow-hidden">
+          <img src="https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?q=80&w=1200&auto=format" class="w-full h-full object-cover thumb transition duration-500" alt="">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          <div class="absolute top-3 left-3 flex items-center gap-2">
+            <span class="px-2 py-1 text-[11px] font-bold rounded-md bg-amber-500 text-black">HINDI</span>
+            <span class="px-2 py-1 text-[11px] font-semibold rounded-md bg-black/60 text-white backdrop-blur">UPSC</span>
+          </div>
+          <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+            <div class="text-white text-sm font-semibold">Polity: Parliament</div>
+            <div class="live-timer text-[11px] font-mono px-2 py-1 rounded bg-white/90 text-zinc-900" data-start=""></div>
+          </div>
+        </div>
+        <div class="p-4">
+          <div class="flex items-center gap-3">
+            <img src="https://i.pravatar.cc/40?img=15" class="w-9 h-9 rounded-full" alt="">
+            <div>
+              <div class="text-sm font-semibold leading-tight">Mudit Sir</div>
+              <div class="text-xs text-zinc-500">Starts in • 9:15 PM</div>
+            </div>
+            <button class="ml-auto h-8 px-3 rounded-lg border border-zinc-300 dark:border-white/20 text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-white/5">Remind</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COURSES -->
+  <section id="courses" class="bg-zinc-50 dark:bg-[#0a0f1c] border-y border-zinc-200 dark:border-white/5 py-16">
+    <div class="max-w-[1200px] mx-auto px-4">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-[28px] font-extrabold tracking-tight">Featured Batches</h2>
+          <p class="text-sm text-zinc-500 mt-1">PW-level price. Unacademy-level faculty. No bakwas.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm"></i>
+            <input id="courseSearch" placeholder="Search batches" class="h-10 pl-8 pr-3 w-[200px] sm:w-[260px] rounded-xl bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+          <div class="hidden sm:flex items-center gap-1.5 p-1 rounded-xl bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10">
+            <button data-filter="all" class="filter-btn h-8 px-3 rounded-lg text-xs font-semibold bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">All</button>
+            <button data-filter="jee" class="filter-btn h-8 px-3 rounded-lg text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-white/10">JEE</button>
+            <button data-filter="neet" class="filter-btn h-8 px-3 rounded-lg text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-white/10">NEET</button>
+            <button data-filter="upsc" class="filter-btn h-8 px-3 rounded-lg text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-white/10">UPSC</button>
+            <button data-filter="cbse" class="filter-btn h-8 px-3 rounded-lg text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-white/10">CBSE</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="courseGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- 6 courses -->
+        <article class="course-card group relative rounded-[24px] bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all" data-category="jee" data-title="jee 2026 arjuna dropper complete batch">
+          <div class="aspect-[16/9] overflow-hidden relative">
+            <img class="thumb w-full h-full object-cover transition duration-500" src="https://images.unsplash.com/photo-1636466501180-13c1a02e10d4?q=80&w=1200&auto=format" alt="">
+            <div class="absolute top-3 left-3 flex gap-1.5">
+              <span class="px-2 py-1 text-[10px] font-bold rounded-md bg-zinc-900 text-white">HINGLISH</span>
+              <span class="px-2 py-1 text-[10px] font-bold rounded-md bg-emerald-500 text-white">BESTSELLER</span>
+            </div>
+            <button onclick="openVideo('https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1')" class="absolute bottom-3 right-3 w-9 h-9 grid place-items-center rounded-full bg-white/90 text-zinc-900 shadow hover:scale-105 transition"><i class="ri-play-fill"></i></button>
+          </div>
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-3">
+              <h3 class="font-bold leading-snug">JEE 2026 Arjuna Dropper Complete Batch</h3>
+              <button class="w-8 h-8 grid place-items-center rounded-lg hover:bg-zinc-100 dark:hover:bg-white/10"><i class="ri-bookmark-line"></i></button>
+            </div>
+            <div class="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+              <img src="https://i.pravatar.cc/20?img=11" class="w-5 h-5 rounded-full"> Abhilash & Team • <span class="flex items-center gap-0.5 text-amber-500"><i class="ri-star-fill"></i>4.8</span> (2.1k)
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <div>
+                <div class="text-[20px] font-extrabold leading-none">₹3,499 <span class="ml-1 text-xs line-through text-zinc-400 font-medium">₹7,999</span></div>
+                <div class="text-[11px] text-emerald-600 font-semibold">56% off • Limited</div>
+              </div>
+              <button class="h-9 px-4 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-sm font-semibold hover:opacity-90">Enroll</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="course-card group relative rounded-[24px] bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all" data-category="neet" data-title="neet 2026 lakshya complete batch biology">
+          <div class="aspect-[16/9] overflow-hidden relative">
+            <img class="thumb w-full h-full object-cover transition duration-500" src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?q=80&w=1200&auto=format" alt="">
+            <div class="absolute top-3 left-3 flex gap-1.5">
+              <span class="px-2 py-1 text-[10px] font-bold rounded-md bg-zinc-900 text-white">HINDI</span>
+            </div>
+            <button onclick="openVideo('https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1')" class="absolute bottom-3 right-3 w-9 h-9 grid place-items-center rounded-full bg-white/90 text-zinc-900 shadow hover:scale-105 transition"><i class="ri-play-fill"></i></button>
+          </div>
+          <div class="p-4">
+            <h3 class="font-bold leading-snug">NEET 2026 Lakshya — PCB Full Syllabus</h3>
+            <div class="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+              <img src="https://i.pravatar.cc/20?img=5" class="w-5 h-5 rounded-full"> Dr. Sushma Ma'am • <span class="flex items-center gap-0.5 text-amber-500"><i class="ri-star-fill"></i>4.9</span> (3.4k)
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <div>
+                <div class="text-[20px] font-extrabold leading-none">₹3,999 <span class="ml-1 text-xs line-through text-zinc-400 font-medium">₹8,999</span></div>
+                <div class="text-[11px] text-zinc-500">1.2L students</div>
+              </div>
+              <button class="h-9 px-4 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-sm font-semibold hover:opacity-90">Enroll</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="course-card group relative rounded-[24px] bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all" data-category="upsc" data-title="upsc cse 2025 foundation gs prelims mains">
+          <div class="aspect-[16/9] overflow-hidden relative">
+            <img class="thumb w-full h-full object-cover transition duration-500" src="https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?q=80&w=1200&auto=format" alt="">
+            <div class="absolute top-3 left-3 flex gap-1.5">
+              <span class="px-2 py-1 text-[10px] font-bold rounded-md bg-blue-600 text-white">NEW</span>
+            </div>
+          <div class="p-4">
+            <h3 class="font-bold leading-snug">UPSC CSE 2025 Foundation — GS + CSAT</h3>
+            <div class="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+              <img src="https://i.pravatar.cc/20?img=15" class="w-5 h-5 rounded-full"> Mudit Jain • <span class="flex items-center gap-0.5 text-amber-500"><i class="ri-star-fill"></i>4.7</span>
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <div>
+                <div class="text-[20px] font-extrabold leading-none">₹12,999 <span class="ml-1 text-xs line-through text-zinc-400">₹24,999</span></div>
+              </div>
+              <button class="h-9 px-4 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-sm font-semibold hover:opacity-90">Enroll</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="course-card group relative rounded-[24px] bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all" data-category="ssc" data-title="ssc cgl 2025 maha pack tier 1 2">
+          <div class="aspect-[16/9] overflow-hidden relative">
+            <img class="thumb w-full h-full object-cover transition duration-500" src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200&auto=format" alt="">
+          </div>
+          <div class="p-4">
+            <h3 class="font-bold leading-snug">SSC CGL 2025 Maha Pack — Tier 1+2</h3>
+            <div class="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+              <img src="https://i.pravatar.cc/20?img=7" class="w-5 h-5 rounded-full"> Aman Sir • 4.8★
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <div class="text-[20px] font-extrabold leading-none">₹1,499</div>
+              <button class="h-9 px-4 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-sm font-semibold hover:opacity-90">Enroll</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="course-card group relative rounded-[24px] bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all" data-category="cbse" data-title="class 10 cbse board 2026 science maths">
+          <div class="aspect-[16/9] overflow-hidden relative">
+            <img class="thumb w-full h-full object-cover transition duration-500" src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1200&auto=format" alt="">
+            <div class="absolute top-3 left-3"><span class="px-2 py-1 text-[10px] font-bold rounded-md bg-violet-600 text-white">BOARD</span></div>
+          </div>
+          <div class="p-4">
+            <h3 class="font-bold leading-snug">Class 10 CBSE 2026 — Science + Maths</h3>
+            <div class="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+              <img src="https://i.pravatar.cc/20?img=9" class="w-5 h-5 rounded-full"> Rani Ma'am • 4.9★
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <div class="text-[20px] font-extrabold leading-none">₹1,999</div>
+              <button class="h-9 px-4 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-sm font-semibold hover:opacity-90">Enroll</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="course-card group relative rounded-[24px] bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/10 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all" data-category="neet" data-title="neet 2025 crash course 60 days">
+          <div class="aspect-[16/9] overflow-hidden relative">
+            <img class="thumb w-full h-full object-cover transition duration-500" src="https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=1200&auto=format" alt="">
+            <div class="absolute top-3 left-3"><span class="px-2 py-1 text-[10px] font-bold rounded-md bg-rose-600 text-white">CRASH</span></div>
+          </div>
+          <div class="p-4">
+            <h3 class="font-bold leading-snug">NEET 2025 Crash — 60 Days Revision</h3>
+            <div class="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+              <img src="https://i.pravatar.cc/20?img=12" class="w-5 h-5 rounded-full"> Dr. Anand Mani • 4.8★
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <div class="text-[20px] font-extrabold leading-none">₹2,499</div>
+              <button class="h-9 px-4 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-sm font-semibold hover:opacity-90">Enroll</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEST SERIES -->
+  <section id="tests" class="max-w-[1200px] mx-auto px-4 py-16">
+    <div class="flex items-end justify-between mb-6">
+      <div>
+        <h2 class="text-[28px] font-extrabold tracking-tight">Test Series & PYQs</h2>
+        <p class="text-sm text-zinc-500 mt-1">Real exam pattern • All India Rank • Detailed solutions</p>
+      </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="rounded-2xl border border-zinc-200 dark:border-white/10 p-5 bg-white dark:bg-white/[0.03] hover:shadow-lg transition">
+        <div class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 grid place-items-center mb-3"><i class="ri-flask-line"></i></div>
+        <div class="font-semibold">JEE Main 2025 Test Series</div>
+        <div class="text-xs text-zinc-500 mt-1">20 Full Tests • NTA Pattern</div>
+        <div class="mt-4 flex items-center justify-between">
+          <span class="text-sm font-bold">FREE</span>
+          <button class="h-8 px-3 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-xs font-semibold">Start</button>
+        </div>
+      </div>
+      <div class="rounded-2xl border border-zinc-200 dark:border-white/10 p-5 bg-white dark:bg-white/[0.03] hover:shadow-lg transition">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 grid place-items-center mb-3"><i class="ri-heart-pulse-line"></i></div>
+        <div class="font-semibold">NEET UG 2025</div>
+        <div class="text-xs text-zinc-500 mt-1">15 Tests • NCERT Based</div>
+        <div class="mt-4 flex items-center justify-between">
+          <span class="text-sm font-bold">FREE</span>
+          <button class="h-8 px-3 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-xs font-semibold">Start</button>
+        </div>
+      <div class="rounded-2xl border border-zinc-200 dark:border-white/10 p-5 bg-white dark:bg-white/[0.03] hover:shadow-lg transition">
+        <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 grid place-items-center mb-3"><i class="ri-government-line"></i></div>
+        <div class="font-semibold">UPSC Prelims GS</div>
+        <div class="text-xs text-zinc-500 mt-1">30 Tests • 10K+ QS</div>
+        <div class="mt-4 flex items-center justify-between">
+          <span class="text-sm font-bold">₹499</span>
+          <button class="h-8 px-3 rounded-lg border border-zinc-300 dark:border-white/20 text-xs font-semibold">Buy</button>
+        </div>
+      <div class="rounded-2xl border border-zinc-200 dark:border-white/10 p-5 bg-white dark:bg-white/[0.03] hover:shadow-lg transition">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 grid place-items-center mb-3"><i class="ri-trophy-line"></i></div>
+        <div class="font-semibold">SSC CGL Tier 1</div>
+        <div class="text-xs text-zinc-500 mt-1">50 Mock Tests</div>
+        <div class="mt-4 flex items-center justify-between">
+          <span class="text-sm font-bold">₹299</span>
+          <button class="h-8 px-3 rounded-lg border border-zinc-300 dark:border-white/20 text-xs font-semibold">Buy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="bg-zinc-50 dark:bg-[#0a0f1c] border-y border-zinc-200 dark:border-white/5 py-20">
+    <div class="max-w-[1100px] mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-[32px] sm:text-[40px] font-black tracking-tight">Simple pricing, desh ke liye</h2>
+        <p class="mt-3 text-zinc-600 dark:text-zinc-400">Unacademy jaisi quality, PW jaisi fees. Cancel anytime.</p>
+        <div class="mt-6 inline-flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10">
+          <button id="billMonthly" class="px-4 h-9 rounded-lg text-sm font-semibold">Monthly</button>
+          <button id="billYearly" class="px-4 h-9 rounded-lg text-sm font-semibold bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">Yearly <span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-white">Save 40%</span></button>
+        </div>
+      </div>
+
+      <div class="mt-10 grid lg:grid-cols-3 gap-5">
+        <!-- Regular -->
+        <div class="rounded-[28px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] p-6 flex flex-col">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold">Regular</h3>
+            <span class="text-xs px-2 py-1 rounded-full bg-zinc-100 dark:bg-white/10">Self Study</span>
+          </div>
+          <div class="mt-4">
+            <div class="text-[36px] font-black leading-none">₹<span data-price-month="149" data-price-year="999">999</span></div>
+            <div class="text-xs text-zinc-500">per year, GST included</div>
+          </div>
+          <ul class="mt-6 space-y-2.5 text-sm">
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> Recorded classes</li>
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> Test series (basic)</li>
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> Notes & DPPs PDF</li>
+            <li class="flex gap-2 text-zinc-400"><i class="ri-close-line mt-0.5"></i> Live classes</li>
+          </ul>
+          <button class="mt-8 h-11 rounded-xl border border-zinc-300 dark:border-white/20 font-semibold hover:bg-zinc-50 dark:hover:bg-white/5">Choose Regular</button>
+        </div>
+
+        <!-- Infinity -->
+        <div class="relative rounded-[28px] border-2 border-primary bg-white dark:bg-[#0e1325] p-6 shadow-xl shadow-violet-600/15 flex flex-col scale-[1.02]">
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-saffron to-primary text-white text-[11px] font-bold shadow">MOST LOVED • LIKE PW INFINITY</div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold">Infinity</h3>
+            <span class="text-xs px-2 py-1 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300">Live + Recorded</span>
+          </div>
+          <div class="mt-4">
+            <div class="text-[36px] font-black leading-none">₹<span data-price-month="399" data-price-year="2999">2,999</span></div>
+            <div class="text-xs text-zinc-500">per year • Best value</div>
+          </div>
+          <ul class="mt-6 space-y-2.5 text-sm">
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> Everything in Regular</li>
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> Unlimited LIVE classes</li>
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> Doubt solving < 60 sec</li>
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> Daily practice + Leaderboard</li>
+          </ul>
+          <button class="mt-8 h-11 rounded-xl bg-gradient-to-r from-saffron to-primary text-white font-semibold shadow-lg shadow-violet-600/20 hover:shadow-xl">Choose Infinity</button>
+          <p class="mt-3 text-[11px] text-center text-zinc-500">20,000+ enrolled this month</p>
+        </div>
+
+        <!-- Pro -->
+        <div class="rounded-[28px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] p-6 flex flex-col">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold">Pro</h3>
+            <span class="text-xs px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300">Mentorship</span>
+          </div>
+          <div class="mt-4">
+            <div class="text-[36px] font-black leading-none">₹<span data-price-month="699" data-price-year="4999">4,999</span></div>
+            <div class="text-xs text-zinc-500">per year • Personal guide</div>
+          </div>
+          <ul class="mt-6 space-y-2.5 text-sm">
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> Everything in Infinity</li>
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> 1:1 Mentor weekly</li>
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> Parent-teacher connect</li>
+            <li class="flex gap-2"><i class="ri-check-line text-emerald-500 mt-0.5"></i> Study planner + counselling</li>
+          </ul>
+          <button class="mt-8 h-11 rounded-xl border border-zinc-300 dark:border-white/20 font-semibold hover:bg-zinc-50 dark:hover:bg-white/5">Choose Pro</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTRUCTORS -->
+  <section class="max-w-[1200px] mx-auto px-4 py-16">
+    <div class="flex items-end justify-between mb-6">
+      <div>
+        <h2 class="text-[28px] font-extrabold tracking-tight">India's Top Educators</h2>
+        <p class="text-sm text-zinc-500 mt-1">Learn from the teachers who created toppers</p>
+      </div>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="group rounded-[24px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] p-5 hover:shadow-xl transition">
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 grid place-items-center text-white font-black text-lg shadow">NV</div>
+          <div>
+            <div class="font-bold">NV Sir</div>
+            <div class="text-xs text-zinc-500">Organic Chemistry • 18 yrs</div>
+          </div>
+        <div class="mt-4 flex items-center gap-3 text-xs">
+          <span class="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-white/10">IIT BHU</span>
+          <span class="flex items-center gap-1 text-amber-500"><i class="ri-star-fill"></i>4.9</span>
+          <span class="text-zinc-500">2.1L students</span>
+        </div>
+      </div>
+      <div class="group rounded-[24px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] p-5 hover:shadow-xl transition">
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 grid place-items-center text-white font-black text-lg shadow">DS</div>
+          <div>
+            <div class="font-bold">Dr. Sushma</div>
+            <div class="text-xs text-zinc-500">Biology • AIIMS Delhi</div>
+          </div>
+        <div class="mt-4 flex items-center gap-3 text-xs">
+          <span class="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-white/10">NEET AIR 1 Mentor</span>
+          <span class="flex items-center gap-1 text-amber-500"><i class="ri-star-fill"></i>4.9</span>
+        </div>
+      <div class="group rounded-[24px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] p-5 hover:shadow-xl transition">
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 grid place-items-center text-white font-black text-lg shadow">MJ</div>
+          <div>
+            <div class="font-bold">Mudit Jain</div>
+            <div class="text-xs text-zinc-500">Polity • UPSC</div>
+          </div>
+        <div class="mt-4 flex items-center gap-3 text-xs">
+          <span class="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-white/10">Ex-IRS</span>
+          <span class="flex items-center gap-1 text-amber-500"><i class="ri-star-fill"></i>4.8</span>
+        </div>
+      <div class="group rounded-[24px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] p-5 hover:shadow-xl transition">
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 grid place-items-center text-white font-black text-lg shadow">RN</div>
+          <div>
+            <div class="font-bold">Rani Ma'am</div>
+            <div class="text-xs text-zinc-500">Maths • CBSE 9-12</div>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center gap-3 text-xs">
+          <span class="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-white/10">15 yrs</span>
+          <span class="flex items-center gap-1 text-amber-500"><i class="ri-star-fill"></i>4.9</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="bg-zinc-50 dark:bg-[#0a0f1c] border-y border-zinc-200 dark:border-white/5 py-16">
+    <div class="max-w-[1200px] mx-auto px-4">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-[28px] font-extrabold tracking-tight">Aapka Dashboard</h2>
+        <div class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">Streak: 12 days 🔥</div>
+      </div>
+      <div class="grid lg:grid-cols-3 gap-5">
+        <div class="lg:col-span-2 space-y-5">
+          <div class="rounded-[24px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] p-5">
+            <div class="flex items-center justify-between mb-4">
+              <div class="font-semibold">Continue Learning</div>
+              <button class="text-xs font-semibold text-primary">View all</button>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div class="group flex gap-3 p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-white/5 transition">
+                <div class="w-24 h-16 rounded-lg overflow-hidden bg-zinc-200 dark:bg-zinc-800 shrink-0 relative">
+                  <img src="https://images.unsplash.com/photo-1636466501180-13c1a02e10d4?q=80&w=400&auto=format" class="w-full h-full object-cover" alt="">
+                  <span class="absolute bottom-1 right-1 text-[10px] px-1 rounded bg-black/70 text-white">12:34</span>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-sm font-semibold truncate">Electrochemistry L2</div>
+                  <div class="text-xs text-zinc-500">JEE • NV Sir</div>
+                  <div class="mt-2 h-1.5 w-full bg-zinc-200 dark:bg-white/10 rounded-full overflow-hidden"><div class="h-full w-[65%] bg-primary rounded-full"></div></div>
+                </div>
+              </div>
+              <div class="group flex gap-3 p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-white/5 transition">
+                <div class="w-24 h-16 rounded-lg overflow-hidden bg-zinc-200 dark:bg-zinc-800 shrink-0 relative">
+                  <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?q=80&w=400&auto=format" class="w-full h-full object-cover" alt="">
+                  <span class="absolute bottom-1 right-1 text-[10px] px-1 rounded bg-black/70 text-white">08:12</span>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-sm font-semibold truncate">Human Heart</div>
+                  <div class="text-xs text-zinc-500">NEET • Dr. Sushma</div>
+                  <div class="mt-2 h-1.5 w-full bg-zinc-200 dark:bg-white/10 rounded-full overflow-hidden"><div class="h-full w-[30%] bg-primary rounded-full"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-[24px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] p-5">
+            <div class="flex items-center justify-between mb-4">
+              <div class="font-semibold">Weekly Target</div>
+              <div class="text-xs text-zinc-500">12/20 hours</div>
+            </div>
+            <div class="flex items-end gap-2 h-[88px]">
+              <div class="flex-1 grid place-items-end"><div class="w-full bg-zinc-200 dark:bg-white/10 rounded-t"><div class="h-[40px] w-full bg-gradient-to-t from-primary to-violet-400 rounded-t"></div></div><div class="text-[10px] mt-1 text-zinc-500">M</div></div>
+              <div class="flex-1 grid place-items-end"><div class="w-full bg-zinc-200 dark:bg-white/10 rounded-t"><div class="h-[60px] w-full bg-gradient-to-t from-primary to-violet-400 rounded-t"></div></div><div class="text-[10px] mt-1 text-zinc-500">T</div></div>
+              <div class="flex-1 grid place-items-end"><div class="w-full bg-zinc-200 dark:bg-white/10 rounded-t"><div class="h-[30px] w-full bg-gradient-to-t from-primary to-violet-400 rounded-t"></div></div><div class="text-[10px] mt-1 text-zinc-500">W</div></div>
+              <div class="flex-1 grid place-items-end"><div class="w-full bg-zinc-200 dark:bg-white/10 rounded-t"><div class="h-[70px] w-full bg-gradient-to-t from-primary to-violet-400 rounded-t"></div></div><div class="text-[10px] mt-1 text-zinc-500">T</div></div>
+              <div class="flex-1 grid place-items-end"><div class="w-full bg-zinc-200 dark:bg-white/10 rounded-t"><div class="h-[50px] w-full bg-gradient-to-t from-primary to-violet-400 rounded-t"></div></div><div class="text-[10px] mt-1 text-zinc-500">F</div></div>
+              <div class="flex-1 grid place-items-end"><div class="w-full bg-zinc-200 dark:bg-white/10 rounded-t"><div class="h-[20px] w-full bg-zinc-300 dark:bg-white/20 rounded-t"></div></div><div class="text-[10px] mt-1 text-zinc-500">S</div></div>
+              <div class="flex-1 grid place-items-end"><div class="w-full bg-zinc-200 dark:bg-white/10 rounded-t"><div class="h-[10px] w-full bg-zinc-300 dark:bg-white/20 rounded-t"></div></div><div class="text-[10px] mt-1 text-zinc-500">S</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div class="rounded-[24px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.03] p-5">
+            <div class="font-semibold mb-3">Upcoming Live</div>
+            <div class="space-y-3 text-sm">
+              <div class="flex items-center justify-between"><div><div class="font-medium">Modern Physics</div><div class="text-xs text-zinc-500">Today 6:30 PM</div></div><span class="text-[11px] px-2 py-1 rounded bg-red-500/10 text-red-600">JEE</span></div>
+              <div class="flex items-center justify-between"><div><div class="font-medium">Plant Kingdom</div><div class="text-xs text-zinc-500">Tomorrow 8 AM</div></div><span class="text-[11px] px-2 py-1 rounded bg-emerald-500/10 text-emerald-600">NEET</span></div>
+            </div>
+          <div class="rounded-[24px] border border-zinc-200 dark:border-white/10 bg-gradient-to-br from-violet-600 to-indigo-600 p-5 text-white">
+            <div class="text-sm opacity-90">Doubt Engine</div>
+            <div class="text-xl font-bold mt-1">Ask in Hinglish, get video solution in 60s</div>
+            <button onclick="toggleDoubt(true)" class="mt-4 h-9 px-4 rounded-xl bg-white text-zinc-900 font-semibold text-sm hover:opacity-90">Try Now →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-12">
+    <div class="max-w-[1200px] mx-auto px-4">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-saffron to-primary grid place-items-center"><span class="text-white font-black">प</span></div>
+            <div class="text-lg font-extrabold">Padho<span class="text-primary">India</span></div>
+          </div>
+          <p class="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Made for Bharat. Inspired by PW & Unacademy. Affordable, accessible, authentic.</p>
+        </div>
+        <div>
+          <div class="font-semibold mb-3">Exams</div>
+          <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <li><a href="#" class="hover:text-primary">JEE</a></li>
+            <li><a href="#" class="hover:text-primary">NEET</a></li>
+            <li><a href="#" class="hover:text-primary">UPSC</a></li>
+            <li><a href="#" class="hover:text-primary">SSC</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-semibold mb-3">Company</div>
+          <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <li><a href="#" class="hover:text-primary">About</a></li>
+            <li><a href="#" class="hover:text-primary">Careers</a></li>
+            <li><a href="#" class="hover:text-primary">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-semibold mb-3">Get App</div>
+          <div class="flex gap-2">
+            <div class="h-10 px-3 rounded-xl border border-zinc-300 dark:border-white/20 grid place-items-center text-xs">Play Store</div>
+            <div class="h-10 px-3 rounded-xl border border-zinc-300 dark:border-white/20 grid place-items-center text-xs">App Store</div>
+          </div>
+        </div>
+      <div class="mt-10 pt-6 border-t border-zinc-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
+        <div>© 2025 PadhoIndia Edutech Pvt Ltd • Padhega India, Tabhi Toh Badhega India</div>
+        <div class="flex items-center gap-4">
+          <a href="#" class="hover:text-primary">Privacy</a>
+          <a href="#" class="hover:text-primary">Terms</a>
+          <a href="#" class="hover:text-primary">Refunds</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- VIDEO MODAL -->
+  <div id="videoModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeVideo()"></div>
+    <div class="relative z-10 w-full h-full grid place-items-center p-4">
+      <div class="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl">
+        <button onclick="closeVideo()" class="absolute top-3 right-3 z-20 w-9 h-9 grid place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"><i class="ri-close-line text-xl"></i></button>
+        <iframe id="videoFrame" class="w-full h-full" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ MODAL -->
+  <div id="quizModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeQuiz()"></div>
+    <div class="relative z-10 w-full h-full grid place-items-center p-4">
+      <div class="w-full max-w-lg rounded-[24px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 shadow-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-zinc-200 dark:border-white/10 flex items-center justify-between">
+          <div class="font-bold flex items-center gap-2"><i class="ri-quiz-line text-amber-500"></i> Daily Practice — 60 sec</div>
+          <button onclick="closeQuiz()" class="w-8 h-8 grid place-items-center rounded-lg hover:bg-zinc-100 dark:hover:bg-white/10"><i class="ri-close-line"></i></button>
+        </div>
+        <div class="p-5">
+          <div id="quizBox"></div>
+          <div id="quizResult" class="hidden text-center py-6">
+            <div class="text-5xl mb-3">🎉</div>
+            <div class="text-xl font-extrabold">Score: <span id="quizScore">0</span>/5</div>
+            <p class="text-sm text-zinc-500 mt-1">Roz practice karo, rank pakka!</p>
+            <button onclick="closeQuiz()" class="mt-5 h-10 px-5 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-semibold">Continue Learning</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOUBT CHAT -->
+  <div class="fixed bottom-5 right-5 z-40">
+    <div id="doubtPanel" class="hidden mb-3 w-[340px] rounded-[20px] border border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden">
+      <div class="px-4 h-12 flex items-center justify-between bg-gradient-to-r from-saffron to-primary text-white">
+        <div class="font-semibold flex items-center gap-2"><i class="ri-robot-2-line"></i> Padho Doubt AI</div>
+        <button onclick="toggleDoubt(false)" class="w-7 h-7 grid place-items-center rounded-lg hover:bg-white/20"><i class="ri-close-line"></i></button>
+      </div>
+      <div id="doubtMessages" class="h-[300px] overflow-y-auto p-3 space-y-3 text-sm bg-zinc-50 dark:bg-zinc-950">
+        <div class="flex gap-2"><div class="w-7 h-7 rounded-full bg-zinc-900 text-white grid place-items-center text-[11px] shrink-0">AI</div><div class="px-3 py-2 rounded-2xl rounded-tl-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10">Namaste! 👋 Physics, Chemistry, Bio ya Maths ka doubt bhejo. Hinglish mein samjhaunga.</div></div>
+      </div>
+      <div class="p-2.5 border-t border-zinc-200 dark:border-white/10 flex items-center gap-2">
+        <input id="doubtInput" placeholder="Type your doubt..." class="flex-1 h-10 px-3 rounded-xl bg-zinc-100 dark:bg-white/5 outline-none text-sm" />
+        <button id="doubtSend" class="w-10 h-10 grid place-items-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"><i class="ri-send-plane-2-fill"></i></button>
+      </div>
+    </div>
+    <button onclick="toggleDoubt(true)" class="h-13 w-13 grid place-items-center rounded-full bg-gradient-to-br from-saffron to-primary text-white shadow-xl shadow-violet-600/30 hover:scale-105 transition">
+      <i class="ri-question-answer-line text-[22px]"></i>
+    </button>
+  </div>
+
+  <script>
+    // Dark mode
+    const html = document.documentElement;
+    const darkToggle = document.getElementById('darkToggle');
+    const savedTheme = localStorage.getItem('pi-theme');
+    if(savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) html.classList.add('dark');
+    darkToggle.onclick = () => { html.classList.toggle('dark'); localStorage.setItem('pi-theme', html.classList.contains('dark') ? 'dark' : 'light'); };
+
+    // Mobile
+    document.getElementById('menuBtn').onclick = () => document.getElementById('mobileNav').classList.toggle('hidden');
+
+    // Live timers
+    const timers = document.querySelectorAll('.live-timer');
+    const now = Date.now();
+    const offsets = [2*60*1000, 12*60*1000, 34*60*1000]; // 2min,12min,34min
+    timers.forEach((el,i)=>{ el.dataset.start = new Date(now + offsets[i]).toISOString(); });
+    function updateTimers(){
+      timers.forEach(el=>{
+        const diff = new Date(el.dataset.start) - Date.now();
+        if(diff<=0){ el.textContent='LIVE NOW'; el.classList.add('bg-red-600','text-white'); return; }
+        const m = Math.floor(diff/60000), s=Math.floor((diff%60000)/1000);
+        el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      });
+    }
+    updateTimers(); setInterval(updateTimers,1000);
+
+    // Video modal
+    const videoModal = document.getElementById('videoModal');
+    const videoFrame = document.getElementById('videoFrame');
+    function openVideo(url){ videoFrame.src = url; videoModal.classList.remove('hidden'); videoModal.classList.add('grid'); document.body.style.overflow='hidden'; }
+    function closeVideo(){ videoFrame.src=''; videoModal.classList.add('hidden'); document.body.style.overflow=''; }
+
+    // Search + filter
+    const courseSearch = document.getElementById('courseSearch');
+    const globalSearch = document.getElementById('globalSearch');
+    const cards = Array.from(document.querySelectorAll('#courseGrid .course-card'));
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    let activeFilter='all';
+    function applyFilters(){
+      const q = (courseSearch.value || globalSearch.value || '').toLowerCase().trim();
+      cards.forEach(c=>{
+        const matchCat = activeFilter==='all' || c.dataset.category===activeFilter;
+        const matchQ = !q || c.dataset.title.includes(q);
+        c.style.display = (matchCat && matchQ) ? '' : 'none';
+      });
+    }
+    courseSearch?.addEventListener('input', applyFilters);
+    globalSearch?.addEventListener('input', ()=>{ document.getElementById('courses').scrollIntoView({behavior:'smooth'}); courseSearch.value = globalSearch.value; applyFilters(); });
+    filterBtns.forEach(b=> b.onclick=()=>{ filterBtns.forEach(x=>x.classList.remove('bg-zinc-900','text-white','dark:bg-white','dark:text-zinc-900')); b.classList.add('bg-zinc-900','text-white','dark:bg-white','dark:text-zinc-900'); activeFilter=b.dataset.filter; applyFilters(); });
+    document.querySelectorAll('.cat').forEach(a=> a.onclick=(e)=>{ e.preventDefault(); activeFilter=a.dataset.cat; filterBtns.forEach(x=>x.classList.remove('bg-zinc-900','text-white','dark:bg-white','dark:text-zinc-900')); document.querySelector(`.filter-btn[data-filter="${activeFilter}"]`)?.classList.add('bg-zinc-900','text-white','dark:bg-white','dark:text-zinc-900'); document.getElementById('courses').scrollIntoView({behavior:'smooth'}); applyFilters(); });
+
+    // Pricing toggle
+    const bm = document.getElementById('billMonthly'), by = document.getElementById('billYearly');
+    function setBilling(yearly){
+      document.querySelectorAll('[data-price-year]').forEach(el=> el.textContent = yearly ? el.dataset.priceYear : el.dataset.priceMonth);
+      by.classList.toggle('bg-zinc-900', yearly); by.classList.toggle('text-white', yearly); by.classList.toggle('dark:bg-white', yearly); by.classList.toggle('dark:text-zinc-900', yearly);
+      bm.classList.toggle('bg-zinc-900', !yearly); bm.classList.toggle('text-white', !yearly); bm.classList.toggle('dark:bg-white', !yearly); bm.classList.toggle('dark:text-zinc-900', !yearly);
+    }
+    bm.onclick=()=>setBilling(false); by.onclick=()=>setBilling(true); setBilling(true);
+
+    // Quiz
+    const quizModal = document.getElementById('quizModal');
+    const quizBox = document.getElementById('quizBox');
+    const quizResult = document.getElementById('quizResult');
+    const quizScore = document.getElementById('quizScore');
+    const questions = [
+      {q:'Which is the SI unit of force?', o:['Joule','Newton','Watt','Pascal'], a:1},
+      {q:'Photosynthesis occurs in?', o:['Mitochondria','Chloroplast','Nucleus','Ribosome'], a:1},
+      {q:'UPSC CSE 2024 Topper AIR 1?', o:['Aditya Srivastava','Ishita Kishore','Anudeep','Shruti'], a:0},
+      {q:'Value of sin 90° ?', o:['0','0.5','1','-1'], a:2},
+      {q:'Article 370 was related to?', o:['GST','J&K','Education','Finance'], a:1},
+    ];
+    let qi=0, score=0;
+    function renderQ(){
+      const item = questions[qi];
+      quizBox.innerHTML = `
+        <div class="mb-1 text-xs font-semibold text-zinc-500">Question ${qi+1} / 5</div>
+        <div class="text-[17px] font-bold mb-4">${item.q}</div>
+        <div class="space-y-2">${item.o.map((opt,i)=>`<button data-i="${i}" class="qopt w-full text-left px-4 py-3 rounded-xl border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 transition">${opt}</button>`).join('')}</div>
+        <div class="mt-4 flex justify-end"><button id="qnext" class="h-9 px-4 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-sm font-semibold opacity-50 pointer-events-none">Next</button></div>
+      `;
+      let chosen=null;
+      quizBox.querySelectorAll('.qopt').forEach(btn=>{
+        btn.onclick=()=>{
+          quizBox.querySelectorAll('.qopt').forEach(b=>b.classList.remove('ring-2','ring-primary','bg-violet-50','dark:bg-violet-500/10'));
+          btn.classList.add('ring-2','ring-primary','bg-violet-50','dark:bg-violet-500/10');
+          chosen = +btn.dataset.i;
+          document.getElementById('qnext').classList.remove('opacity-50','pointer-events-none');
+        };
+      });
+      document.getElementById('qnext').onclick=()=>{
+        if(chosen===item.a) score++;
+        qi++;
+        if(qi<questions.length) renderQ(); else { quizBox.classList.add('hidden'); quizResult.classList.remove('hidden'); quizScore.textContent = score; }
+      };
+    }
+    function openQuiz(){ quizModal.classList.remove('hidden'); quizModal.classList.add('grid'); qi=0; score=0; quizBox.classList.remove('hidden'); quizResult.classList.add('hidden'); renderQ(); document.body.style.overflow='hidden'; }
+    function closeQuiz(){ quizModal.classList.add('hidden'); document.body.style.overflow=''; }
+    document.getElementById('quizOpen').onclick = openQuiz;
+
+    // Doubt chat
+    const doubtPanel = document.getElementById('doubtPanel');
+    const doubtMessages = document.getElementById('doubtMessages');
+    const doubtInput = document.getElementById('doubtInput');
+    function toggleDoubt(show){ doubtPanel.classList.toggle('hidden', !show); if(show) doubtInput.focus(); }
+    function addMsg(html, me=false){
+      const row = document.createElement('div');
+      row.className = 'flex gap-2 ' + (me?'justify-end':'');
+      row.innerHTML = me ? `<div class="px-3 py-2 rounded-2xl rounded-tr-sm bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 max-w-[80%]">${html}</div><div class="w-7 h-7 rounded-full bg-primary text-white grid place-items-center text-[11px] shrink-0">You</div>` : `<div class="w-7 h-7 rounded-full bg-zinc-900 text-white grid place-items-center text-[11px] shrink-0">AI</div><div class="px-3 py-2 rounded-2xl rounded-tl-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 max-w-[80%]">${html}</div>`;
+      doubtMessages.appendChild(row); doubtMessages.scrollTop = doubtMessages.scrollHeight;
+    }
+    document.getElementById('doubtSend').onclick = ()=>{
+      const text = doubtInput.value.trim(); if(!text) return;
+      addMsg(text, true); doubtInput.value='';
+      setTimeout(()=>{
+        const replies = [
+          'Bilkul! Step 1: Concept samjho — ' + text + ' ka basic formula yeh hai...',
+          'Iska short trick: NCERT line + PYQ pattern. Main 60 sec video solution bhej raha hu (demo).',
+          'Hinglish me: Dekho beta, isme pehle free body diagram banao, phir ΣF=ma lagao.',
+        ];
+        addMsg(replies[Math.floor(Math.random()*replies.length)]);
+      },700);
+    };
+    doubtInput.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('doubtSend').click(); });
+
+    // init
+    applyFilters();
+  </script>
+</body>
+</html>
